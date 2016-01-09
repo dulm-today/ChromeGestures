@@ -29,7 +29,7 @@
     "down.png"
   ],
    "name": "Gestures for Google Chrome\u2122",
-   "permissions": [ "tabs", "http://*/", "clipboardWrite" ],
+   "permissions": [ "tabs", "http://*/", "clipboardWrite", "downloads" ],
    "options_page": "options_page.html",
    "version": "1.13.4",
    "manifest_version": 2

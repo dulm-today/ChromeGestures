@@ -19,6 +19,44 @@
   }
   var Root, NotRoot;
   var LOG_SEC = Math.log(1000);
+  
+  /*function IsURL(str_url){
+	var strRegex = '^((https|http|ftp|rtsp|mms)?://)'
+	+ '?(([0-9a-z_!~*\'().&=+$%-]+: )?[0-9a-z_!~*\'().&=+$%-]+@)?'
+	+ '(([0-9]{1,3}.){3}[0-9]{1,3}'
+	+ '|' 
+	+ '([0-9a-z_!~*\'()-]+.)*'
+	+ '([0-9a-z][0-9a-z-]{0,61})?[0-9a-z].'
+	+ '[a-z]{2,6})'
+	+ '(:[0-9]{1,4})?'
+	+ '((/?)|'
+	+ '(/[0-9a-z_!~*\'().;?:@&=+$,%#-]+)+/?)$';
+	var re=new RegExp(strRegex);
+	if (re.test(str_url)){
+		return (true);
+	}else{
+		return (false);
+	}
+  }*/
+  /*'^(((https|http|ftp|rtsp|mms):)?//)?((([0-9]{1,3}.){3}[0-9]{1,3})|(([a-z0-9]+.){1,2}[a-z0-9]+)){1}.*'*/
+  function IsURL(url){
+    var strRegex = '^(((https|http|ftp|rtsp|mms):)?//)?'
+				 + '(([0-9]{1,3}\\.){3}[0-9]{1,3}'
+				 + '|'
+				 + '(([\\w]+\\.){1,2}[\\w]+))'
+				 + '.*';
+	if (RegExp(strRegex).test(url))
+	  return (true);
+	else
+	  return (false);
+  }
+  
+  function MakeHttpUrl(str_url){
+    if (!RegExp('^(https|http|ftp|rtsp|mms)?://').test(str_url)){
+	  str_url = 'http://' + str_url;
+    }
+	return str_url;
+  }
 
   var ACTION = {
     "back": function () {
@@ -287,7 +325,49 @@
       if (arg.target) {
         connection.postMessage({action: 'copy', 'message': '<a href="' + arg.target.href + '">' + arg.target.textContent.trim() + '</a>'});
       }
-    }
+    },
+	"save picture": function (arg) { 
+	  if (arg.target) {
+	    var img = null;
+		var act = 'saveas';
+		if (arg.target.nodeName == 'IMG') {
+		  img = arg.target;
+		} else {
+		  img = arg.target.getElementsByTagName("img");
+		  if (img.length > 0)
+		    img = img[0];
+		}
+		
+		if (arg.action && arg.action.args && arg.action.args[0]
+			&& arg.action.args[0] == '0'){
+	      act = 'save';
+	    }
+		if (img != null)
+		  connection.postMessage({action: act, 'link': img.src});
+	  }
+	},
+	"auto on link": function (arg) {
+	  if (arg.target) {		
+		var img = arg.target.getElementsByTagName("img");
+		if (img.length > 0){
+		  var act = 'saveas';
+		  if (arg.action && arg.action.args && arg.action.args[2]
+			  && arg.action.args[2] == '0'){
+	        act = 'save';
+	      }
+		  connection.postMessage({action: act, 'link': img[0].src});
+		  return;
+		}
+		
+		var act = 'goto';
+	    var force = false;
+		if (arg.action && arg.action.args){
+		  if (arg.action.args[0] && arg.action.args[0] == '1'){ act = 'open_tab'; }
+		  if (arg.action.args[1] && arg.action.args[1] == '1'){ force = true; }
+		}
+		connection.postMessage({action: act, 'link': arg.target.href, foreground: force});
+	  }
+	}
   };
   var TEXT_ACTION = {
     "no action": function () {
@@ -310,6 +390,54 @@
         connection.postMessage({action: 'open_tab', 'link': url});
       }
     },
+	"open #1 in new tab":function(arg){
+	  if (arg.target) {
+        connection.postMessage({action: 'open_tab', 'link': String(getSelection()).trim(), foreground: true});
+      }
+	},
+	"open #1 in current tab": function(arg){
+	  if (arg.target) {
+        connection.postMessage({action: 'goto', 'link': String(getSelection()).trim()});
+      }
+	},
+	"open #1 in background tab": function (arg) {
+      if (arg.target) {
+        connection.postMessage({action: 'open_tab', 'link': String(getSelection()).trim()});
+      }
+    },
+	"auto on text": function (arg) {
+	  if (arg.target) {
+		if (arg.target.nodeName == "IMG"){
+			var act = 'saveas';
+			if (arg.action && arg.action.args && arg.action.args[3]
+			    && arg.action.args[3] == '0'){
+			  act = 'save';
+			}
+			connection.postMessage({action: act, 'link': arg.target.src});
+			return;
+		}
+		
+		var act = 'goto';
+	    var force = false;
+		var search_url = '';
+		var select = String(getSelection()).trim();
+		if (arg.action && arg.action.args){
+		  if (arg.action.args[0] && arg.action.args[0] == '1'){ act = 'open_tab'; }
+		  if (arg.action.args[1] && arg.action.args[1] == '1'){ force = true; }
+		  if (arg.action.args[2]){ 
+		    search_url = arg.action.args[2].replace('%s', encodeURIComponent(select));
+		  }
+		}
+		
+		if (IsURL(select)){
+		  var url = MakeHttpUrl(select);
+		  connection.postMessage({action: act, 'link': url, foreground: force});
+		}
+		else {
+          connection.postMessage({action: act, 'link': search_url, foreground: force});
+		}
+	  }
+	},
     "copy text": function (arg) {
       connection.postMessage({action: 'copy', 'message': String(getSelection()).trim()});
     },

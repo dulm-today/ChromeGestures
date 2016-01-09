@@ -255,7 +255,37 @@ this.MG = {
         {name: "copy url and text", args: []},
         {name: "copy url and text as html", args: []}
       ]
-    }
+    },
+	{
+	  group: 'SavePicture',
+	  actions: [
+		{name: "save picture", args: [
+		  {
+		    type: 'Save as',
+			default_value: '1'
+		  }
+		]}
+	  ]
+	},
+	{
+	  group: "Auto",
+	  actions: [
+	    {name: "auto on link", args: [
+		  {
+			type: 'new tab',
+			default_value: '0'
+		  },
+		  {
+			type: 'foreground',
+			default_value: '0'
+		  },
+		  {
+		    type: 'Save as',
+			default_value: '1'
+		  }
+		]}
+	  ]
+	}
   ],
   textdrag_action_names: [
     {
@@ -299,6 +329,37 @@ this.MG = {
         ]}
       ]
     },
+	{
+	  group: 'OpenTextLink',
+	  actions: [
+		{name: "open #1 in new tab", args: []},
+		{name: "open #1 in current tab", args: []},
+		{name: "open #1 in background tab", args: []}
+	  ]
+	},
+	{
+	  group: 'Auto',
+	  actions: [
+		{name: "auto on text", args: [
+		  {
+			type: 'new tab',
+			default_value: '0'
+		  },
+		  {
+			type: 'foreground',
+			default_value: '0',
+		  },
+		  {
+		    type: 'URL',
+			default_value: 'http://www.google.com/search?q=%s'
+		  },
+		  {
+		    type: 'Save as',
+			default_value: '1'
+		  }
+		]}
+	  ]
+	},
     {
       group: 'Clipboard',
       actions: [
@@ -448,6 +509,12 @@ function RequestHandler(message, con, sender) {
   } else if (message.action === 'goto') {
     chrome.tabs.update(tab.id, {url: message.link});
     return true;
+  } else if (message.action === 'save') {
+    chrome.downloads.download ({url: message.link, saveAs: false});
+	return true;
+  } else if (message.action === 'saveas') {
+    chrome.downloads.download ({url: message.link, saveAs: true});
+	return true;
   }
   if (message.tabid) {
     chrome.tabs.update(message.tabid, {selected: true});
